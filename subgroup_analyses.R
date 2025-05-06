@@ -6,7 +6,7 @@ pkgs <- c("tidyverse", "excessmort")
 # Load packages
 lapply(pkgs, library, character.only = TRUE)
 
-# Read in mortatlity data set
+# Read in mortality data set
 mort.dat <- read_csv()
 
 # We want to analyze trends in mortality according to (1) race/ethnicity, (2) age,
