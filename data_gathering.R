@@ -19,7 +19,7 @@
 
 #---- Setup #----
 
-pkgs <- c("tidyverse", "doParallel")
+pkgs <- c("tidyverse", "doParallel", "tidycensus")
 lapply(pkgs, library, character.only = TRUE)
 
 setwd("/Users/kyleaune/Library/CloudStorage/OneDrive-SharedLibraries-JohnsHopkins/SORT - CSTE Training/CDC Wonder Data for Training")
@@ -1069,4 +1069,136 @@ as.data.frame(
 
 # Saving line list
 write_csv(mort.full, "linelist_2010-2020_mi.csv")
+saveRDS(mort.full, "~/Documents/Research/R Projects/cste_training_workingcopy/linelist_2010-2020_mi.rda")
 
+
+#---- Generating Demographics File #----
+
+# Downloading demographics
+demo <- get_demographics(geography = "county", state = "Michigan", years = 2010:2020,
+                         vars = c("AGEGROUP", "RACE"))
+
+# 2010 Decennial
+demo.10 <-
+  get_decennial("county",
+                variables = c("P001001", paste0("P00300", 1:8), # Race
+                              paste0("P012", sprintf("%03d", 1:49))), # Age
+                state = "MI",
+                year = 2010,
+                output = "wide")
+
+# 2015:2019 ACS 5-year (1-year incomplete for all counties)
+demo.acs <- lapply(2015:2019, function(yr) {
+  get_acs("county",
+          variables = c("B01001A_001", "B01001B_001", "B01001C_001", "B01001D_001", "B01001E_001", # Race
+                        paste0("B01001_", sprintf("%03d", 1:49))), # Age
+          state = "MI",
+          year = yr,
+          survey = "acs5",
+          output = "wide") %>%
+    # Dropping margin of error columns for easier of categorizing
+    select(-ends_with("M"))
+})
+
+# 2020 Decennial
+demo.20 <-
+  get_decennial("county",
+                variables = c(paste0("DP1_", sprintf("%04d", 1:24), "C"), # Age
+                              paste0("DP1_", sprintf("%04d", 78:82), "C")), # Race
+                state = "MI",
+                year = 2020,
+                output = "wide",
+                sumfile = "dp")
+
+
+# Combining race and age categories
+demo.10 <- demo.10 %>%
+  rename(total = P003001,
+         white = P003002,
+         black = P003003,
+         natam = P003004) %>%
+  mutate(api = P003005 + P003006) %>%
+  rowwise() %>%
+  mutate(young = sum(c_across(P012003:P012019), c_across(P012027:P012043)),
+         old = sum(c_across(P012020:P012025), c_across(P012044:P012049))) %>%
+  ungroup() %>%
+  select(NAME, total:natam, api:old) %>%
+  mutate(year = 2010)
+
+demo.acs <- lapply(demo.acs, function(x) {
+  return(
+    x %>%
+      rename(total = B01001_001E,
+             white = B01001A_001E,
+             black = B01001B_001E,
+             natam = B01001C_001E) %>%
+      mutate(api = B01001D_001E + B01001E_001E) %>%
+      rowwise() %>%
+      mutate(young = sum(c_across(B01001_003E:B01001_019E), c_across(B01001_027E:B01001_043E)),
+             old = sum(c_across(B01001_020E:B01001_025E), c_across(B01001_044E:B01001_049E))) %>%
+      ungroup() %>%
+      select(NAME, total, white:natam, api:old)
+    )
+})
+
+demo.acs <- mapply(FUN = function(acs, yr) {
+  return(
+    acs %>%
+      mutate(year = yr)
+  )
+},
+acs = demo.acs,
+yr = 2015:2019,
+SIMPLIFY = FALSE)
+
+demo.20 <- demo.20 %>%
+  rename(total = DP1_0001C,
+         white = DP1_0078C,
+         black = DP1_0079C,
+         natam = DP1_0080C) %>%
+  mutate(api = DP1_0081C + DP1_0082C) %>%
+  rowwise() %>%
+  mutate(young = sum(c_across(DP1_0002C:DP1_0014C)),
+         old = sum(c_across(DP1_0015C:DP1_0019C))) %>%
+  ungroup() %>%
+  select(NAME, total, white:natam, api:old) %>%
+  mutate(year = 2020)
+
+# Combining demographics into single dataframe
+demo <- bind_rows(demo.10, demo.acs, demo.20)
+
+# Splitting into demographics by year, county, race, and age and pivoting long
+demo.total <- demo %>%
+  group_by(year) %>%
+  summarise(population = sum(total))
+demo.co <- demo %>%
+  select(year, NAME, total) %>%
+  rename(county = NAME,
+         population = total) %>%
+  mutate(county = gsub("Michigan", "MI", county))
+demo.race <- demo %>%
+  group_by(year) %>%
+  summarise(across(white:api, ~ sum(.x))) %>%
+  pivot_longer(cols = white:api,
+               values_to = "population",
+               names_to = "race") %>%
+  mutate(race = case_match(race,
+                           "white" ~ "White",
+                           "black" ~ "Black / African American",
+                           "natam" ~ "American Indian",
+                           "api" ~ "Asian / Pacific Islander"))
+demo.age <- demo %>%
+  group_by(year) %>%
+  summarise(across(young:old, ~ sum(.x))) %>%
+  pivot_longer(cols = young:old,
+               values_to = "population",
+               names_to = "age") %>%
+  mutate(age = case_match(age,
+                          "young" ~ "18-64",
+                          "old" ~ "65+"))
+
+# Exporting demographic tables
+write_csv(demo.total, "demo_by_year_2010-2020_MI.csv")
+write_csv(demo.co, "demo_by_year_by_county_2010-2020_MI.csv")
+write_csv(demo.race, "demo_by_year_by_race_2010-2020_MI.csv")
+write_csv(demo.age, "demo_by_year_by_age_2010-2020_MI.csv")
