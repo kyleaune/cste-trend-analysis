@@ -33,7 +33,7 @@ all.counts <- compute_counts(dat,
                              demo = demo.total,
                              date = "isodate")
 
-pandemic.dates <- seq.Date(as.Date("2020-01-01"), as.Date("2020-12-31"), by = "day")
+pandemic.dates <- seq.Date(as.Date("2020-03-10"), as.Date("2020-12-31"), by = "day")
 
 # Fitting model to calculate excess mortality at each week
 weekly.xs.all <- all.counts %>%
