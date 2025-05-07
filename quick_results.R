@@ -60,8 +60,8 @@ weekly.xs.all <- all.counts %>%
 
 weekly.xs.all <- bind_cols(weekly.xs.all[1:4]) %>%
   # Calculating 95% confidence intervals of expected deaths
-  mutate(exp.l95 = expected + qnorm(0.025) * exp(log_expected_se),
-         exp.u95 = expected + qnorm(0.975) * exp(log_expected_se))
+  mutate(exp.l95 = exp(log(expected) - qnorm(1-(.05/2)) * log_expected_se),
+         exp.u95 = exp(log(expected) + qnorm(1-(.05/2)) * log_expected_se))
 
 weekly.all.plotdat <- weekly.xs.all %>%
   # Dropping last row (incomplete week)
@@ -151,8 +151,8 @@ weekly.race.plotdat <- lapply(weekly.xs.race, function(x) {
   # we're not interested in)
   x <- bind_cols(x[1:4]) %>%
     # Calculating 95% confidence intervals
-    mutate(exp.l95 = expected + qnorm(0.025) * exp(log_expected_se),
-           exp.u95 = expected + qnorm(0.0975) * exp(log_expected_se))
+    mutate(exp.l95 = exp(log(expected) - qnorm(1-(.05/2)) * log_expected_se),
+           exp.u95 = exp(log(expected) + qnorm(1-(.05/2)) * log_expected_se))
   
   return(x %>%
            # Setting starting time of plot
@@ -244,8 +244,8 @@ weekly.age.plotdat <- lapply(weekly.xs.age, function(x) {
   # we're not interested in)
   x <- bind_cols(x[1:4]) %>%
     # Calculating 95% confidence intervals
-    mutate(exp.l95 = expected + qnorm(0.025) * exp(log_expected_se),
-           exp.u95 = expected + qnorm(0.0975) * exp(log_expected_se))
+    mutate(exp.l95 = exp(log(expected) - qnorm(1-(.05/2)) * log_expected_se),
+           exp.u95 = exp(log(expected) + qnorm(1-(.05/2)) * log_expected_se))
   
   return(x %>%
            # Setting starting time of plot
@@ -329,8 +329,8 @@ weekly.cause.plotdat <- lapply(weekly.xs.cause, function(x) {
   # we're not interested in)
   x <- bind_cols(x[1:4]) %>%
     # Calculating 95% confidence intervals
-    mutate(exp.l95 = expected + qnorm(0.025) * exp(log_expected_se),
-           exp.u95 = expected + qnorm(0.0975) * exp(log_expected_se))
+    mutate(exp.l95 = exp(log(expected) - qnorm(1-(.05/2)) * log_expected_se),
+           exp.u95 = exp(log(expected) + qnorm(1-(.05/2)) * log_expected_se))
   
   return(x %>%
            # Setting starting time of plot
