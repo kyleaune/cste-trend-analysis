@@ -78,7 +78,7 @@ weekly.all.plotdat <- weekly.xs.all %>%
 
 ggplot(weekly.all.plotdat, aes(x = date, y = value, col = class)) +
   geom_line() +
-  geom_ribbon(data = x %>% filter(class == "Expected"),
+  geom_ribbon(data = weekly.all.plotdat %>% filter(class == "Expected"),
               aes(ymin = exp.l95, ymax = exp.u95),
               fill = NA, lty = 2) +
   # Specifying monthly x-axis labels with minor ticks for each week
