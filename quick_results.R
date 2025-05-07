@@ -78,6 +78,9 @@ weekly.all.plotdat <- weekly.xs.all %>%
 
 ggplot(weekly.all.plotdat, aes(x = date, y = value, col = class)) +
   geom_line() +
+  geom_ribbon(data = x %>% filter(class == "Expected"),
+              aes(ymin = exp.l95, ymax = exp.u95),
+              fill = NA, lty = 2) +
   # Specifying monthly x-axis labels with minor ticks for each week
   scale_x_date(
     date_breaks = "1 month",
@@ -171,6 +174,9 @@ xs.race.plots <- mapply(function(x, y) {
   return(
     ggplot(x, aes(x = date, y = value, col = class)) +
       geom_line() +
+      geom_ribbon(data = x %>% filter(class == "Expected"),
+                  aes(ymin = exp.l95, ymax = exp.u95),
+                  fill = NA, lty = 2) +
       scale_x_date(
         date_breaks = "1 month",
         date_minor_breaks = "1 week",
@@ -269,6 +275,9 @@ xs.age.plots <- mapply(function(x, y) {
   return(
     ggplot(x, aes(x = date, y = value, col = class)) +
       geom_line() +
+      geom_ribbon(data = x %>% filter(class == "Expected"),
+                  aes(ymin = exp.l95, ymax = exp.u95),
+                  fill = NA, lty = 2) +
       scale_x_date(
         date_breaks = "1 month",
         date_minor_breaks = "1 week",
@@ -359,6 +368,9 @@ xs.cause.plots <- mapply(function(x, y) {
   return(
     ggplot(x, aes(x = date, y = value, col = class)) +
       geom_line() +
+      geom_ribbon(data = x %>% filter(class == "Expected"),
+                  aes(ymin = exp.l95, ymax = exp.u95),
+                  fill = NA, lty = 2) +
       scale_x_date(
         date_breaks = "1 month",
         date_minor_breaks = "1 week",
