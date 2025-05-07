@@ -198,6 +198,11 @@ mapply(function(x, y) {
                         include.trend = FALSE,
                         model = "quasipoisson",
                         alpha = 0.05) %>%
+           # Calculating standard error for confidence interval
+           mutate(se = sd / sqrt(observed)) %>%
+           # Calculating excess confidence interval
+           mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
+                  excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
            mutate(race = y) %>%
            relocate(race) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
@@ -290,6 +295,11 @@ mapply(function(x, y) {
                         include.trend = FALSE,
                         model = "quasipoisson",
                         alpha = 0.05) %>%
+           # Calculating standard error for confidence interval
+           mutate(se = sd / sqrt(observed)) %>%
+           # Calculating excess confidence interval
+           mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
+                  excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
            mutate(agegroup = y) %>%
            relocate(agegroup) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
@@ -375,7 +385,11 @@ mapply(function(x, y) {
                         include.trend = FALSE,
                         model = "quasipoisson",
                         alpha = 0.05) %>%
-           mutate(cause = y) %>%
+           # Calculating standard error for confidence interval
+           mutate(se = sd / sqrt(observed)) %>%
+           # Calculating excess confidence interval
+           mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
+                  excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%mutate(cause = y) %>%
            relocate(cause) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
 }, x = cause.counts.ls, y = names(cause.counts.ls), SIMPLIFY = FALSE) %>%
@@ -423,6 +437,11 @@ total.xs.county <- mapply(function(x, y) {
                         include.trend = FALSE,
                         model = "quasipoisson",
                         alpha = 0.05) %>%
+           # Calculating standard error for confidence interval
+           mutate(se = sd / sqrt(observed)) %>%
+           # Calculating excess confidence interval
+           mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
+                  excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
            mutate(county = y) %>%
            relocate(county) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
