@@ -226,7 +226,31 @@ xs.cause.plots <- mapply(
   SIMPLIFY = FALSE
 )
 
-### Saving figures ###
+# Now that we have nice figures, let's save high-quality versions so we can share
+# them in reports and presentations. With a single figure, we could write one
+# line of code, but since we have lots of them here, let's use another 'mapply'
+# loop to make things more efficient.
+mapply(
+  # We're going to define another function with two variables. 'x' will be the
+  # figure we created and saved as 'xs.cause.plots' and 'y' will be the filenames
+  # we want to save as
+  function(x, y) {
+    ggsave(y, plot = x,
+           # We can also specify what we want to figure to look like and its resolution
+           # We'll make a 6.5x3 inch figure at 300 dots-per-inch (agood presentation
+           # quality resolution)
+           width = 6.5, height = 3, units = "in", dpi = 300)
+  },
+  x = xs.cause.plots, 
+  # We're going to use the names of the 'xs.cause.plots' figures, but some of them
+  # have '&' symbols and many of them have spaces which can be troublesome for
+  # file naming sometimes, so we'll replace all of those with dashes and underscores
+  # using the 'gsub' function. Since we want to replace two different characters,
+  # we'll need to nest one 'gsub' within another.
+  y = paste0("excess_",
+             gsub(" ", "_",
+                  gsub(" & ", "-", names(xs.cause.plots))),
+             "_deaths.png"))
 
 
 # Now that we have a plot, let's make a table of observed, expected, and excess
