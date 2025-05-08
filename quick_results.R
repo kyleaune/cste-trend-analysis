@@ -110,6 +110,11 @@ all.counts %>%
     include.trend = FALSE,
     model = "quasipoisson",
     alpha = 0.05) %>%
+  # Calculating standard error for confidence interval
+  mutate(se = sd / sqrt(observed)) %>%
+  # Calculating excess confidence interval
+  mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
+         excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
   # Adding labels for the period results
   mutate(period = c("COVID-19")) %>%
   # Moving the label column to the left of the table
