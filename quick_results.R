@@ -67,7 +67,7 @@ weekly.all.plotdat <- weekly.xs.all %>%
   # Dropping last row (incomplete week)
   filter(date < make_date(2020, 12, 27)) %>%
   # Setting starting time of plot
-  filter(date > make_date(2020, 01, 01)) %>%
+  filter(date > make_date(2019, 01, 01)) %>%
   # Stacking observed and expected to make ggplot creation easier
   pivot_longer(cols = observed:expected,
                names_to = "class",
@@ -115,6 +115,10 @@ all.counts %>%
   # Calculating excess confidence interval
   mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
          excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
+  # Calculate mortality ratios (& 95% CIs)
+  mutate(mr = observed / expected,
+         mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
+         mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%
   # Adding labels for the period results
   mutate(period = c("COVID-19")) %>%
   # Moving the label column to the left of the table
@@ -214,7 +218,10 @@ mapply(function(x, y) {
            # Calculating excess confidence interval
            mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
                   excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
-           mutate(race = y) %>%
+           # Calculate mortality ratios (& 95% CIs)
+           mutate(mr = observed / expected,
+                  mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
+                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%mutate(race = y) %>%
            relocate(race) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
 }, x = race.counts.ls, y = names(race.counts.ls), SIMPLIFY = FALSE) %>%
@@ -314,7 +321,10 @@ mapply(function(x, y) {
            # Calculating excess confidence interval
            mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
                   excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
-           mutate(agegroup = y) %>%
+           # Calculate mortality ratios (& 95% CIs)
+           mutate(mr = observed / expected,
+                  mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
+                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%mutate(agegroup = y) %>%
            relocate(agegroup) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
 }, x = age.counts.ls, y = names(age.counts.ls), SIMPLIFY = FALSE) %>%
@@ -407,7 +417,10 @@ mapply(function(x, y) {
            # Calculating excess confidence interval
            mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
                   excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%mutate(cause = y) %>%
-           relocate(cause) %>%
+           # Calculate mortality ratios (& 95% CIs)
+           mutate(mr = observed / expected,
+                  mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
+                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%relocate(cause) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
 }, x = cause.counts.ls, y = names(cause.counts.ls), SIMPLIFY = FALSE) %>%
   bind_rows() %>%
