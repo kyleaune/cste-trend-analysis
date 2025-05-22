@@ -85,7 +85,7 @@ cause <- lapply(yrs, function(x) {
           "Mental and behavioural disorders" ~ "mental",
           "Neoplasms" ~ "cancer",
           "Pregnancy, childbirth and the puerperium" ~ "pregnancy",
-          "Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified" ~ "unk",
+          "Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified" ~ "abn",
           .default = NA_character_
         )
       ) %>%
@@ -315,7 +315,7 @@ bind_rows(cause) %>%
     #  8 gi           33081  3.19
     #  9 gu           24911  2.40
     # 10 id           15730  1.52
-    # 11 unk          14392  1.39
+    # 11 abn          14392  1.39
     # 12 msk          14209  1.37
     # 13 blood        11438  1.10
     # 14 perinatal     9810  0.947
@@ -886,7 +886,7 @@ cause <- mcmapply(
             )
           ) %>%
         # Assigning remaining deaths as unknown
-        mutate(d.unk = d.total - sum(c(c_across(d.id:d.genetic), d.external), na.rm = TRUE)) %>%
+        mutate(d.abn = d.total - sum(c(c_across(d.id:d.genetic), d.external), na.rm = TRUE)) %>%
         ungroup() %>%
         # Cause of death appears to have had additional causes suppressed, so changing any
         # categories that are still suppressed (even though the correct number of deaths
@@ -1011,7 +1011,7 @@ mort.mo <- lapply(all.mo, function(x) {
       rep("Gastrointestinal", times = d$d.gi),
       rep("Genitourinary", times = d$d.gu),
       rep("Infectious Disease", times = d$d.id),
-      rep("Unknown", times = d$d.unk),
+      rep("Presumed COVID-19", times = d$d.abn),
       rep("Musculoskeletal", times = d$d.msk),
       rep("Blood & Immune Disorders", times = d$d.blood),
       rep("Perinatal", times = d$d.perinatal),
@@ -1063,7 +1063,7 @@ as.data.frame(
           summarise(across(.cols = c(d.blood, d.cancer, d.cvd, d.genetic, d.ear,
                                      d.endocrine, d.external, d.eye, d.gi, d.gu,
                                      d.id, d.mental, d.msk, d.nervous, d.perinatal,
-                                     d.pregnancy, d.respiratory, d.skin, d.unk),
+                                     d.pregnancy, d.respiratory, d.skin, d.abn),
                            ~ sum(.x, na.rm = TRUE)))))
   ## Perfect match
 
