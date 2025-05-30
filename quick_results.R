@@ -221,7 +221,8 @@ mapply(function(x, y) {
            # Calculate mortality ratios (& 95% CIs)
            mutate(mr = observed / expected,
                   mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
-                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%mutate(race = y) %>%
+                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%
+           mutate(race = y) %>%
            relocate(race) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
 }, x = race.counts.ls, y = names(race.counts.ls), SIMPLIFY = FALSE) %>%
@@ -324,7 +325,8 @@ mapply(function(x, y) {
            # Calculate mortality ratios (& 95% CIs)
            mutate(mr = observed / expected,
                   mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
-                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%mutate(agegroup = y) %>%
+                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%
+           mutate(agegroup = y) %>%
            relocate(agegroup) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
 }, x = age.counts.ls, y = names(age.counts.ls), SIMPLIFY = FALSE) %>%
@@ -380,14 +382,14 @@ weekly.cause.plotdat <- lapply(weekly.xs.cause, function(x) {
 
 # Plotting observed vs expected
 xs.cause.plots <- mapply(function(x, y) {
-  return(
-    ggplot(x, aes(x = date, y = value, col = class)) +
-      geom_line() +
-      geom_ribbon(data = x %>% filter(class == "Expected"),
-                  aes(ymin = exp.l95, ymax = exp.u95),
-                  fill = NA, lty = 2) +
-      scale_x_date(
-        date_breaks = "1 month",
+  p <- ggplot(x, aes(x = date, y = value, col = class)) +
+    geom_line() +
+    geom_ribbon(data = x %>% filter(class == "Expected"),
+                aes(ymin = exp.l95, ymax = exp.u95),
+                fill = NA, lty = 2) +
+    ylim(min(c(x$exp.l95, x$value)) - 5, max(x$value) + 5) +
+        scale_x_date(
+          date_breaks = "1 month",
         date_minor_breaks = "1 week",
         date_labels = "%b %Y") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -397,13 +399,15 @@ xs.cause.plots <- mapply(function(x, y) {
       labs(col = NULL,
            title = "Excess Mortality 2020",
            subtitle = paste(y, "Cause of Death", sep = " "))
-  )
+  ggsave(paste0(outdir, y, "excess.png"), p, height = 2.5, width = 6.5, dpi = 300, units = "in")
+  
+  return(p)
 }, x = weekly.cause.plotdat, y = names(weekly.cause.plotdat), SIMPLIFY = FALSE)
 
 do.call(ggarrange, c(xs.cause.plots, ncol = 1))
 ggsave(paste0(outdir, "excess_bycause.png"), height = 40, width = 6.5, dpi = 300, units = "in")
 
-# Calculating overall excess during pandemic by race group
+# Calculating overall excess during pandemic by cause of death
 mapply(function(x, y) {
   return(x %>%
            excess_model(exclude = pandemic.dates,
@@ -420,7 +424,8 @@ mapply(function(x, y) {
            # Calculate mortality ratios (& 95% CIs)
            mutate(mr = observed / expected,
                   mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
-                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%relocate(cause) %>%
+                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%
+           relocate(cause) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
 }, x = cause.counts.ls, y = names(cause.counts.ls), SIMPLIFY = FALSE) %>%
   bind_rows() %>%
@@ -472,6 +477,10 @@ total.xs.county <- mapply(function(x, y) {
            # Calculating excess confidence interval
            mutate(excess.l95 = excess - qnorm(1-(.05/2)) * se,
                   excess.u95 = excess + qnorm(1-(.05/2)) * se) %>%
+           # Calculate mortality ratios (& 95% CIs)
+           mutate(mr = observed / expected,
+                  mr.l95 = observed / (expected + qnorm(1-(.05/2)) * se),
+                  mr.u95 = observed / (expected - qnorm(1-(.05/2)) * se)) %>%
            mutate(county = y) %>%
            relocate(county) %>%
            mutate(xs_rate = obs_death_rate - exp_death_rate))
