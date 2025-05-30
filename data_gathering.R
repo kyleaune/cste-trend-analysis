@@ -61,31 +61,30 @@ cause <- lapply(yrs, function(x) {
     read.csv(paste0(x, "/ucod_", x, ".csv")) %>%
       # Removing notes
       select(-any_of("Notes")) %>%
-      # Removing entry for "codes for special purposes" (all empty rows)
-      filter(UCD...ICD.Chapter != "Codes for special purposes") %>%
       # Adding short names for cause of death
       mutate(
         cod = case_match(
-          UCD...ICD.Chapter,
-          "Certain conditions originating in the perinatal period" ~ "perinatal",
-          "Certain infectious and parasitic diseases" ~ "id",
-          "Congenital malformations, deformations and chromosomal abnormalities" ~ "genetic",
-          "Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism" ~ "blood",
-          "Diseases of the circulatory system" ~ "cvd",
-          "Diseases of the digestive system" ~ "gi",
-          "Diseases of the ear and mastoid process" ~ "ear",
-          "Diseases of the eye and adnexa" ~ "eye",
-          "Diseases of the genitourinary system" ~ "gu",
-          "Diseases of the musculoskeletal system and connective tissue" ~ "msk",
-          "Diseases of the nervous system" ~ "nervous",
-          "Diseases of the respiratory system" ~ "respiratory",
-          "Diseases of the skin and subcutaneous tissue" ~ "skin",
-          "Endocrine, nutritional and metabolic diseases" ~ "endocrine",
-          "External causes of morbidity and mortality" ~ "external",
-          "Mental and behavioural disorders" ~ "mental",
-          "Neoplasms" ~ "cancer",
-          "Pregnancy, childbirth and the puerperium" ~ "pregnancy",
-          "Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified" ~ "abn",
+          UCD...ICD.Chapter.Code,
+          "A00-B99" ~ "id",
+          "C00-D48" ~ "cancer",
+          "D50-D89" ~ "blood",
+          "E00-E88" ~ "endocrine",
+          "F01-F99" ~ "mental",
+          "G00-G98" ~ "nervous",
+          "H00-H57" ~ "eye",
+          "H60-H93" ~ "ear",
+          "I00-I99" ~ "cvd",
+          "J00-J98" ~ "respiratory",
+          "K00-K92" ~ "gi",
+          "L00-L98" ~ "skin",
+          "M00-M99" ~ "msk",
+          "N00-N98" ~ "gu",
+          "O00-O99" ~ "pregnancy",
+          "P00-P96" ~ "perinatal",
+          "Q00-Q99" ~ "genetic",
+          "R00-R99" ~ "abn",
+          "U00-U99" ~ "spec",
+          "V01-Y89" ~ "external",
           .default = NA_character_
         )
       ) %>%
@@ -96,7 +95,7 @@ cause <- lapply(yrs, function(x) {
 
 # Checking imports - should have 83 counties * 12 months * 11 years = 10956 rows
   # 43824 for race (4 groups)
-  # 208164 for cause (19 groups)
+  # 219120 for cause (20 groups)
 lapply(list(all, age1, age2, race, cause), function (x)
   nrow(bind_rows(x)))
 ## All ok
@@ -295,8 +294,48 @@ race <- mapply(
 
 #---- Cause of Death #----
 
+#TEMP#
+cause <- lapply(yrs, function(x) {
+  return(
+    read.csv(paste0(x, "/ucod_", x, ".csv")) %>%
+      # Removing notes
+      select(-any_of("Notes")) %>%
+      # Adding short names for cause of death
+      mutate(
+        cod = case_match(
+          UCD...ICD.Chapter.Code,
+          "A00-B99" ~ "id",
+          "C00-D48" ~ "cancer",
+          "D50-D89" ~ "blood",
+          "E00-E88" ~ "endocrine",
+          "F01-F99" ~ "mental",
+          "G00-G98" ~ "nervous",
+          "H00-H57" ~ "eye",
+          "H60-H93" ~ "ear",
+          "I00-I99" ~ "cvd",
+          "J00-J98" ~ "respiratory",
+          "K00-K92" ~ "gi",
+          "L00-L98" ~ "skin",
+          "M00-M99" ~ "msk",
+          "N00-N98" ~ "gu",
+          "O00-O99" ~ "pregnancy",
+          "P00-P96" ~ "perinatal",
+          "Q00-Q99" ~ "genetic",
+          "R00-R99" ~ "abn",
+          "U00-U99" ~ "spec",
+          "V01-Y89" ~ "external",
+          .default = NA_character_
+        )
+      ) %>%
+      # Removing rows with no information
+      filter(Month != "")
+  )
+})
+
+
+
 # Calculating overall rates of each cause (for generating suppressed counts)
-bind_rows(cause) %>%
+cause[[11]] %>%
   group_by(cod) %>%
   mutate(Deaths = as.numeric(if_else(
     Deaths == "Suppressed", as.character(sample(1:5, 1)), Deaths
@@ -305,25 +344,26 @@ bind_rows(cause) %>%
   mutate(rate = total / sum(total) * 100) %>%
   arrange(desc(rate))
     #    cod         total  rate
-    #  1 cvd         335002 32.3
-    #  2 cancer      211464 20.4
-    #  3 respiratory 101446  9.79
-    #  4 external     78883  7.61
-    #  5 nervous      71425  6.89
-    #  6 endocrine    54592  5.27
-    #  7 mental       50306  4.86
-    #  8 gi           33081  3.19
-    #  9 gu           24911  2.40
-    # 10 id           15730  1.52
-    # 11 abn          14392  1.39
-    # 12 msk          14209  1.37
-    # 13 blood        11438  1.10
-    # 14 perinatal     9810  0.947
-    # 15 skin          6765  0.653
-    # 16 genetic       2220  0.214
-    # 17 pregnancy      328  0.0317
-    # 18 ear             87  0.00840
-    # 19 eye             66  0.00637
+    #  1 cvd         347815 32.8    
+    #  2 cancer      222986 21.1    
+    #  3 respiratory 101446  9.58   
+    #  4 external     93461  8.82   
+    #  5 endocrine    61484  5.81   
+    #  6 nervous      56811  5.36   
+    #  7 mental       43265  4.09   
+    #  8 gi           40241  3.80   
+    #  9 gu           24911  2.35   
+    # 10 id           15730  1.49   
+    # 11 spec         11756  1.11   
+    # 12 abn          11301  1.07   
+    # 13 perinatal     9810  0.926  
+    # 14 msk           5962  0.563  
+    # 15 blood         4757  0.449  
+    # 16 skin          4059  0.383  
+    # 17 genetic       2220  0.210  
+    # 18 pregnancy      984  0.0929 
+    # 19 eye             88  0.00831
+    # 20 ear             29  0.00274
 
 # Generating suppressed numbers for cause of death
 cause <- mcmapply(
@@ -369,7 +409,7 @@ cause <- mcmapply(
         mutate(
           d.cvd = case_when(
             n.sup == 1 ~ replace_na(d.cvd, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.cvd, sample(seq(
                 1, min(d.total - d.count, 9)
               ), size = 1))
@@ -399,8 +439,38 @@ cause <- mcmapply(
         mutate(
           d.cancer = case_when(
             n.sup == 1 ~ replace_na(d.cancer, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.cancer, sample(seq(
+                1, min(d.total - d.count, 9)
+              ), size = 1))
+          )
+        ) %>%
+        # Counting total assigned deaths
+        mutate(
+          n.sup = sum(is.na(c_across(d.id:d.external))),
+          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
+        ) %>%
+        # For rows with 1 suppressed total, assign as difference between sum
+        # of subcategories and total
+        mutate(across(
+          .cols = d.id:d.external,
+          .fns = ~ if_else(n.sup == 1, replace_na(.x, d.total - sum(
+            c_across(d.id:d.external), na.rm = TRUE
+          )), .x)
+        )) %>%
+        # Counting suppressed causes and total assigned deaths
+        mutate(
+          n.sup = sum(is.na(c_across(d.id:d.external))),
+          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
+        ) %>%
+        # Assigning special/covid-19 deaths as either remaining total if only one suppressed
+        # category, or random value between 1 and lowest of remaining total or 9
+        # suppressed category remaining
+        mutate(
+          d.spec = case_when(
+            n.sup == 1 ~ replace_na(d.spec, d.total - d.count),
+            n.sup > 1 &
+              d.total - d.count > 0 ~ replace_na(d.spec, sample(seq(
                 1, min(d.total - d.count, 9)
               ), size = 1))
           )
@@ -429,7 +499,7 @@ cause <- mcmapply(
         mutate(
           d.respiratory = case_when(
             n.sup == 1 ~ replace_na(d.respiratory, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.respiratory, sample(seq(
                 1, min(d.total - d.count, 9)
               ), size = 1))
@@ -459,7 +529,7 @@ cause <- mcmapply(
         mutate(
           d.external = case_when(
             n.sup == 1 ~ replace_na(d.external, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.external, sample(seq(
                 1, min(d.total - d.count, 9)
               ), size = 1))
@@ -489,7 +559,7 @@ cause <- mcmapply(
         mutate(
           d.nervous = case_when(
             n.sup == 1 ~ replace_na(d.nervous, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.nervous, sample(seq(
                 1, min(d.total - d.count, 9)
               ), size = 1))
@@ -519,7 +589,7 @@ cause <- mcmapply(
         mutate(
           d.endocrine = case_when(
             n.sup == 1 ~ replace_na(d.endocrine, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.endocrine, sample(seq(
                 1, min(d.total - d.count, 9)
               ), size = 1))
@@ -549,9 +619,9 @@ cause <- mcmapply(
         mutate(
           d.mental = case_when(
             n.sup == 1 ~ replace_na(d.mental, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.mental, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -579,9 +649,9 @@ cause <- mcmapply(
         mutate(
           d.gi = case_when(
             n.sup == 1 ~ replace_na(d.gi, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.gi, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -609,9 +679,9 @@ cause <- mcmapply(
         mutate(
           d.gu = case_when(
             n.sup == 1 ~ replace_na(d.gu, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.gu, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -639,69 +709,9 @@ cause <- mcmapply(
         mutate(
           d.id = case_when(
             n.sup == 1 ~ replace_na(d.id, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.id, sample(seq(
-                0, min(d.total - d.count, 9)
-              ), size = 1))
-          )
-        ) %>%
-        # Counting total assigned deaths
-        mutate(
-          n.sup = sum(is.na(c_across(d.id:d.external))),
-          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
-        ) %>%
-        # For rows with 1 suppressed total, assign as difference between sum
-        # of subcategories and total
-        mutate(across(
-          .cols = d.id:d.external,
-          .fns = ~ if_else(n.sup == 1, replace_na(.x, d.total - sum(
-            c_across(d.id:d.external), na.rm = TRUE
-          )), .x)
-        )) %>%
-        # Counting suppressed causes and total assigned deaths
-        mutate(
-          n.sup = sum(is.na(c_across(d.id:d.external))),
-          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
-        ) %>%
-        # Assigning musculoskeletal deaths as either remaining total if only one suppressed
-        # category, or random value between 0 and lowest of remaining total or 9
-        # suppressed category remaining
-        mutate(
-          d.msk = case_when(
-            n.sup == 1 ~ replace_na(d.msk, d.total - d.count),
-            n.sup != 1 &
-              d.total - d.count > 0 ~ replace_na(d.msk, sample(seq(
-                0, min(d.total - d.count, 9)
-              ), size = 1))
-          )
-        ) %>%
-        # Counting total assigned deaths
-        mutate(
-          n.sup = sum(is.na(c_across(d.id:d.external))),
-          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
-        ) %>%
-        # For rows with 1 suppressed total, assign as difference between sum
-        # of subcategories and total
-        mutate(across(
-          .cols = d.id:d.external,
-          .fns = ~ if_else(n.sup == 1, replace_na(.x, d.total - sum(
-            c_across(d.id:d.external), na.rm = TRUE
-          )), .x)
-        )) %>%
-        # Counting suppressed causes and total assigned deaths
-        mutate(
-          n.sup = sum(is.na(c_across(d.id:d.external))),
-          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
-        ) %>%
-        # Assigning blood/immune deaths as either remaining total if only one suppressed
-        # category, or random value between 0 and lowest of remaining total or 9
-        # suppressed category remaining
-        mutate(
-          d.blood = case_when(
-            n.sup == 1 ~ replace_na(d.blood, d.total - d.count),
-            n.sup != 1 &
-              d.total - d.count > 0 ~ replace_na(d.blood, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -729,9 +739,69 @@ cause <- mcmapply(
         mutate(
           d.perinatal = case_when(
             n.sup == 1 ~ replace_na(d.perinatal, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.perinatal, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
+              ), size = 1))
+          )
+        ) %>%
+        # Counting total assigned deaths
+        mutate(
+          n.sup = sum(is.na(c_across(d.id:d.external))),
+          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
+        ) %>%
+        # For rows with 1 suppressed total, assign as difference between sum
+        # of subcategories and total
+        mutate(across(
+          .cols = d.id:d.external,
+          .fns = ~ if_else(n.sup == 1, replace_na(.x, d.total - sum(
+            c_across(d.id:d.external), na.rm = TRUE
+          )), .x)
+        )) %>%
+        # Counting suppressed causes and total assigned deaths
+        mutate(
+          n.sup = sum(is.na(c_across(d.id:d.external))),
+          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
+        ) %>%
+        # Assigning musculoskeletal deaths as either remaining total if only one suppressed
+        # category, or random value between 0 and lowest of remaining total or 9
+        # suppressed category remaining
+        mutate(
+          d.msk = case_when(
+            n.sup == 1 ~ replace_na(d.msk, d.total - d.count),
+            n.sup > 1 &
+              d.total - d.count > 0 ~ replace_na(d.msk, sample(seq(
+                1, min(d.total - d.count, 9)
+              ), size = 1))
+          )
+        ) %>%
+        # Counting total assigned deaths
+        mutate(
+          n.sup = sum(is.na(c_across(d.id:d.external))),
+          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
+        ) %>%
+        # For rows with 1 suppressed total, assign as difference between sum
+        # of subcategories and total
+        mutate(across(
+          .cols = d.id:d.external,
+          .fns = ~ if_else(n.sup == 1, replace_na(.x, d.total - sum(
+            c_across(d.id:d.external), na.rm = TRUE
+          )), .x)
+        )) %>%
+        # Counting suppressed causes and total assigned deaths
+        mutate(
+          n.sup = sum(is.na(c_across(d.id:d.external))),
+          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
+        ) %>%
+        # Assigning blood/immune deaths as either remaining total if only one suppressed
+        # category, or random value between 0 and lowest of remaining total or 9
+        # suppressed category remaining
+        mutate(
+          d.blood = case_when(
+            n.sup == 1 ~ replace_na(d.blood, d.total - d.count),
+            n.sup > 1 &
+              d.total - d.count > 0 ~ replace_na(d.blood, sample(seq(
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -759,9 +829,9 @@ cause <- mcmapply(
         mutate(
           d.skin = case_when(
             n.sup == 1 ~ replace_na(d.skin, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.skin, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -789,9 +859,9 @@ cause <- mcmapply(
         mutate(
           d.genetic = case_when(
             n.sup == 1 ~ replace_na(d.genetic, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.genetic, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -819,9 +889,9 @@ cause <- mcmapply(
         mutate(
           d.pregnancy = case_when(
             n.sup == 1 ~ replace_na(d.pregnancy, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.pregnancy, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -849,9 +919,9 @@ cause <- mcmapply(
         mutate(
           d.ear = case_when(
             n.sup == 1 ~ replace_na(d.ear, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.ear, sample(seq(
-                0, min(d.total - d.count, 9)
+                1, min(d.total - d.count, 9)
               ), size = 1))
           )
         ) %>%
@@ -879,21 +949,23 @@ cause <- mcmapply(
         mutate(
           d.eye = case_when(
             n.sup == 1 ~ replace_na(d.eye, d.total - d.count),
-            n.sup != 1 &
+            n.sup > 1 &
               d.total - d.count > 0 ~ replace_na(d.eye, sample(seq(
-                0, min(d.total - d.count, 9)
-                ), size = 1))
-            )
-          ) %>%
-        # Assigning remaining deaths as unknown
-        mutate(d.abn = d.total - sum(c(c_across(d.id:d.genetic), d.external), na.rm = TRUE)) %>%
-        ungroup() %>%
+                1, min(d.total - d.count, 9)
+              ), size = 1))
+          )
+        ) %>%
+        # Counting suppressed causes and total assigned deaths
+        mutate(
+          n.sup = sum(is.na(c_across(d.id:d.external))),
+          d.count = sum(c_across(d.id:d.external), na.rm = TRUE)
+        ) %>%
         # Cause of death appears to have had additional causes suppressed, so changing any
         # categories that are still suppressed (even though the correct number of deaths
         # has been assigned to all causes) to zero
-        mutate(
-          across(d.id:d.external,
-                 ~ replace_na(.x, 0))) %>%
+        mutate(across(d.id:d.external, ~ replace_na(.x, 0))) %>%
+        # Assigning remaining deaths as abnormal to even assigned and total deaths
+        mutate(d.abn = d.abn + d.total - d.count) %>%
         ungroup()
     )
   },
@@ -902,6 +974,9 @@ cause <- mcmapply(
   SIMPLIFY = FALSE,
   mc.cores = detectCores() - 1
 )
+
+View(cause[[11]] %>%
+       mutate(diff = d.total - d.count))
 
 
 #---- Combining Subgroups #----
@@ -1001,25 +1076,26 @@ mort.mo <- lapply(all.mo, function(x) {
     )
     # Create vector of causes of deaths in month x in county y
     c <- c(
-      rep("Cardiovascular", times = d$d.cvd),
-      rep("Cancer", times = d$d.cancer),
-      rep("Respiratory", times = d$d.respiratory),
-      rep("External", times = d$d.external),
-      rep("Nervous System", times = d$d.nervous),
-      rep("Endocrine", times = d$d.endocrine),
-      rep("Mental Disorders", times = d$d.mental),
-      rep("Gastrointestinal", times = d$d.gi),
-      rep("Genitourinary", times = d$d.gu),
-      rep("Infectious Disease", times = d$d.id),
-      rep("Presumed COVID-19", times = d$d.abn),
-      rep("Musculoskeletal", times = d$d.msk),
-      rep("Blood & Immune Disorders", times = d$d.blood),
-      rep("Perinatal", times = d$d.perinatal),
-      rep("Skin Disease", times = d$d.skin),
-      rep("Congential Malformations", times = d$d.genetic),
-      rep("Pregnancy", times = d$d.pregnancy),
-      rep("Ear Disease", times = d$d.ear),
-      rep("Eye Disease", times = d$d.eye)
+      rep("Cardiovascular (I00-I99)", times = d$d.cvd),
+      rep("Cancer (C00-D48)", times = d$d.cancer),
+      rep("Respiratory (J00-J98)", times = d$d.respiratory),
+      rep("External (V01-Y89)", times = d$d.external),
+      rep("Nervous System (G00-G98)", times = d$d.nervous),
+      rep("Endocrine (E00-E88)", times = d$d.endocrine),
+      rep("Mental Disorders (F01-F99)", times = d$d.mental),
+      rep("Gastrointestinal (K00-K92)", times = d$d.gi),
+      rep("Genitourinary (N00-N98)", times = d$d.gu),
+      rep("Infectious Disease (A00-B99)", times = d$d.id),
+      rep("Special Use incl. COVID-19 (U00-U99)", times = d$d.spec),
+      rep("Abnormal (R00-R99)", times = d$d.abn),
+      rep("Musculoskeletal (M00-M99)", times = d$d.msk),
+      rep("Blood & Immune Disorders (D50-D89)", times = d$d.blood),
+      rep("Perinatal (P00-P96)", times = d$d.perinatal),
+      rep("Skin Disease (L00-L98)", times = d$d.skin),
+      rep("Congential Malformations (Q00-Q99)", times = d$d.genetic),
+      rep("Pregnancy (O00-O99)", times = d$d.pregnancy),
+      rep("Ear Disease (H60-H93)", times = d$d.ear),
+      rep("Eye Disease (H00-H57)", times = d$d.eye)
     )
     
     # Assign ages and races of deaths in month x in county y
@@ -1043,28 +1119,31 @@ ra <- bind_rows(race)
 ca <- bind_rows(cause)
 
 # Age
-rbind(table(mort.full$age),
-      aa %>%
-        summarise(across(.cols = c(d.lt18, d.18_64, d.65plus),
-                         ~ sum(.x, na.rm = TRUE))))
+cbind(source = c("Original", "Interpolated"),
+      rbind(table(mort.full$age),
+            aa %>%
+              summarise(across(.cols = c(d.lt18, d.18_64, d.65plus),
+                               ~ sum(.x, na.rm = TRUE)))))
   ## Perfect match
 
 # Race
-rbind(table(mort.full$race),
+cbind(source = c("Original", "Interpolated"),
+      rbind(table(mort.full$race),
       ra %>%
         summarise(across(.cols = d.ind:d.white,
-                         ~ sum(.x, na.rm = TRUE))))
+                         ~ sum(.x, na.rm = TRUE)))))
   ## Perfect match
 
 # Cause
-as.data.frame(
+cbind(source = c("Original", "Interpolated"),
+      as.data.frame(
   rbind(table(mort.full$cause),
         ca %>%
-          summarise(across(.cols = c(d.blood, d.cancer, d.cvd, d.genetic, d.ear,
-                                     d.endocrine, d.external, d.eye, d.gi, d.gu,
-                                     d.id, d.mental, d.msk, d.nervous, d.perinatal,
-                                     d.pregnancy, d.respiratory, d.skin, d.abn),
-                           ~ sum(.x, na.rm = TRUE)))))
+          summarise(across(.cols = c(d.abn, d.blood, d.cancer, d.cvd, d.genetic,
+                                     d.ear, d.endocrine, d.external, d.eye, d.gi,
+                                     d.gu, d.id, d.mental, d.msk, d.nervous, d.perinatal,
+                                     d.pregnancy, d.respiratory, d.skin, d.spec),
+                           ~ sum(.x, na.rm = TRUE))))))
   ## Perfect match
 
 # Saving line list
